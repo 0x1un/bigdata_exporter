@@ -1,0 +1,39 @@
+modules:
+  namenode:
+#    targets:
+#      - "192.168.224.91:50070/jmx"
+#      - "192.168.224.92:50070/jmx"
+    scrape_metrics:
+      - Hadoop:service=NameNode,name=FSNamesystemState CapacityRemaining HDFS剩余容量 hadoop_hdfs
+      - Hadoop:service=NameNode,name=FSNamesystem CorruptBlocks HDFS错误块数量 hadoop_hdfs
+      - Hadoop:service=NameNode,name=FSNamesystem MissingBlocks HDFS消失块数量 hadoop_hdfs
+      - Hadoop:service=NameNode,name=FSNamesystem VolumeFailuresTotal HDFS失败卷数量 hadoop_hdfs
+      - Hadoop:service=NameNode,name=FSNamesystem NumLiveDataNodes HDFS-DataNode在线数量 hadoop_hdfs
+      - Hadoop:service=NameNode,name=FSNamesystem NumDeadDataNodes HDFS-DataNode离线数量 hadoop_hdfs
+      - Hadoop:service=NameNode,name=FSNamesystem FilesTotal HDFS-总文件数量 hadoop_hdfs
+      - Hadoop:service=NameNode,name=FSNamesystem TotalLoad HDFS-访问统计 hadoop_hdfs
+      - Hadoop:service=NameNode,name=FSNamesystem BlockCapacity HDFS-可分配块的最大数量 hadoop_hdfs
+      - Hadoop:service=NameNode,name=FSNamesystemState BlocksTotal HDFS-块总数 hadoop_hdfs
+      - Hadoop:service=NameNode,name=FSNamesystemState UnderReplicatedBlocks HDFS-副本数不足的块总数 hadoop_hdfs
+      - Hadoop:service=NameNode,name=FSNamesystemState NumStaleDataNodes HDFS-失效块数量 hadoop_hdfs
+
+  yarn:
+#    targets:
+#      - "192.168.224.91:8088/jmx"
+    scrape_metrics:
+      - Hadoop:service=ResourceManager,name=ClusterMetrics NumUnhealthyNMs Yarn不健康的节点数 hadoop_yarn
+      - Hadoop:service=ResourceManager,name=ClusterMetrics NumActiveNMs Yarn当前在线的节点数 hadoop_yarn
+      - Hadoop:service=ResourceManager,name=ClusterMetrics NumLostNMs Yarn失踪的节点数 hadoop_yarn
+
+  hbase:
+    scrape_metrics:
+      - Hadoop:service=HBase,name=Master,sub=IPC numCallsInPriorityQueue 优先队列RPC请求数 hadoop_hbase
+      - Hadoop:service=HBase,name=Master,sub=IPC numCallsInReplicationQueue 优先复制队列RPC请求数 hadoop_hbase
+      - Hadoop:service=HBase,name=Master,sub=IPC numCallsInWriteQueue 写调用队列调用RPC请求数 hadoop_hbase
+      - Hadoop:service=HBase,name=Master,sub=IPC numCallsInReadQueue 读取调用队列中RPC请求数 hadoop_hbase
+      - Hadoop:service=HBase,name=Master,sub=IPC numCallsInScanQueue 扫描调用队列中RPC请求数 hadoop_hbase
+      - Hadoop:service=HBase,name=Master,sub=IPC receivedBytes 集群接收数据量 hadoop_hbase
+      - Hadoop:service=HBase,name=Master,sub=IPC sentBytes 集群发送数据量 hadoop_hbase
+      - Hadoop:service=HBase,name=Master,sub=IPC numOpenConnections 打开的连接数 hadoop_hbase
+      - Hadoop:service=HBase,name=Master,sub=Server clusterRequests 集群总请求数 hadoop_hbase
+      - Hadoop:service=HBase,name=Master,sub=Server numDeadRegionServers 离线的RS数量 hadoop_hbase
