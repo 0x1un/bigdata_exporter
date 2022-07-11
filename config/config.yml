@@ -16,6 +16,11 @@ modules:
       - Hadoop:service=NameNode,name=FSNamesystemState BlocksTotal HDFS-块总数 hadoop_hdfs
       - Hadoop:service=NameNode,name=FSNamesystemState UnderReplicatedBlocks HDFS-副本数不足的块总数 hadoop_hdfs
       - Hadoop:service=NameNode,name=FSNamesystemState NumStaleDataNodes HDFS-失效块数量 hadoop_hdfs
+      - Hadoop:service=NameNode,name=NameNodeInfo NumberOfMissingBlocks HDFS丢失块数量 hadoop_hdfs
+      - Hadoop:service=NameNode,name=RpcActivityForPort8020 RpcProcessingTimeAvgTime rpc平均处理时间 hadoop_hdfs
+      - Hadoop:service=NameNode,name=RpcDetailedActivityForPort8020 GetBlocksAvgTime block获取平均耗时 hadoop_hdfs
+      - Hadoop:service=NameNode,name=FSNamesystem EstimatedCapacityLostTotal 容量故障导致的总容量损失估计 hadoop_hdfs
+      - Hadoop:service=NameNode,name=FSNamesystem VolumeFailuresTotal 所有DataNodes的卷故障总数 hadoop_hdfs
 
   yarn:
 #    targets:
@@ -37,3 +42,8 @@ modules:
       - Hadoop:service=HBase,name=Master,sub=IPC numOpenConnections 打开的连接数 hadoop_hbase
       - Hadoop:service=HBase,name=Master,sub=Server clusterRequests 集群总请求数 hadoop_hbase
       - Hadoop:service=HBase,name=Master,sub=Server numDeadRegionServers 离线的RS数量 hadoop_hbase
+      - java.lang:type=OperatingSystem OpenFileDescriptorCount HBase打开的文件数 hadoop_hbase
+      - java.lang:type=OperatingSystem FreePhysicalMemorySize 空闲虚物理内存大小 hadoop_hbase
+      - Hadoop:service=HBase,name=JvmMetrics ThreadsWaiting 等待的线程数 hadoop_hbase
+      - Hadoop:service=HBase,name=JvmMetrics ThreadsBlocked Block的线程数 hadoop_hbase
+      - Hadoop:service=HBase,name=RegionServer,sub=WAL SyncTime_mean WAL写hdfs的平均时间 hadoop_hbase
