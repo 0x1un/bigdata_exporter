@@ -7,7 +7,6 @@ modules:
       - Hadoop:service=NameNode,name=FSNamesystemState CapacityRemaining HDFS剩余容量 hadoop_hdfs
       - Hadoop:service=NameNode,name=FSNamesystem CorruptBlocks HDFS错误块数量 hadoop_hdfs
       - Hadoop:service=NameNode,name=FSNamesystem MissingBlocks HDFS消失块数量 hadoop_hdfs
-      - Hadoop:service=NameNode,name=FSNamesystem VolumeFailuresTotal HDFS失败卷数量 hadoop_hdfs
       - Hadoop:service=NameNode,name=FSNamesystem NumLiveDataNodes HDFS-DataNode在线数量 hadoop_hdfs
       - Hadoop:service=NameNode,name=FSNamesystem NumDeadDataNodes HDFS-DataNode离线数量 hadoop_hdfs
       - Hadoop:service=NameNode,name=FSNamesystem FilesTotal HDFS-总文件数量 hadoop_hdfs

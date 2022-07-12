@@ -5,11 +5,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gobeam/stringy"
+	logging "github.com/ipfs/go-log/v2"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"io/ioutil"
 	"net/http"
 	"strings"
+)
+
+var (
+	log = logging.Logger("<bigdata_exporter>")
 )
 
 type Bean map[string]any

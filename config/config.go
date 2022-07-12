@@ -25,7 +25,11 @@ type MetricConfig struct {
 }
 
 func parse() *MetricConfig {
-	data, _ := ioutil.ReadFile("config/config.yml")
+	data, err := ioutil.ReadFile("config/config.yml")
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
 	var mc MetricConfig
 	if err := yaml.Unmarshal(data, &mc); err != nil {
 		fmt.Println(err)
