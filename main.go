@@ -10,12 +10,22 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
 var (
 	log = logging.Logger("<bigdata_exporter>")
+	cfg config.MetricConfig
 )
+
+func init() {
+	_cfg, err := config.LoadConfig()
+	if err != nil {
+		log.Fatalf("failed to load config file, %s", err)
+	}
+	cfg = *_cfg
+}
 
 type Bean map[string]any
 type JMXBeans map[string][]Bean
@@ -38,6 +48,20 @@ func (j JMXBeans) Get(name string) Bean {
 	return nil
 }
 
+func RetrieveMetricFromYarnProxy(target string, taskID string) (JMXBeans, error) {
+	uri := fmt.Sprintf("http://%s/proxy/%s/metrics/json", target, parseAppAttemptStr(taskID))
+	resp, err := http.Get(uri)
+	if err != nil {
+		return nil, err
+	}
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	var out JMXBeans
+	return out, json.Unmarshal(data, &out)
+}
+
 func RetrieveMetricFromTarget(target string) (JMXBeans, error) {
 	resp, err := http.Get("http://" + target + "/jmx")
 	if err != nil {
@@ -49,6 +73,71 @@ func RetrieveMetricFromTarget(target string) (JMXBeans, error) {
 	}
 	var out JMXBeans
 	return out, json.Unmarshal(data, &out)
+}
+
+func yarnTaskMetricHandler(w http.ResponseWriter, r *http.Request) {
+	moduleName := r.URL.Query().Get("module")
+	if moduleName == "" {
+		http.Error(w, "module name is missing", http.StatusBadRequest)
+		return
+	}
+	params := r.URL.Query()
+	target := params.Get("target")
+	if target == "" {
+		http.Error(w, "target parameter is missing", http.StatusBadRequest)
+		return
+	}
+
+	info, err := RetrieveMetricFromTarget(target)
+	if err != nil {
+		http.Error(w, "retrieve metric failed: "+target+" "+err.Error(), http.StatusBadRequest)
+		return
+	}
+	metrics, ok := cfg.Modules[moduleName]
+	if !ok {
+		http.Error(w, moduleName+" module not defined", http.StatusBadRequest)
+		return
+	}
+
+	scrapeYarnMetric(info, metrics.ScrapeMetrics, target, w, r)
+
+}
+
+func parseAppAttemptStr(s string) string {
+	if s == "" {
+		return ""
+	}
+	sp := strings.Split(s, "_")
+	if len(sp) == 4 {
+		return fmt.Sprintf("application_%s_%s", sp[1], sp[2])
+	}
+	return ""
+}
+
+func scrapeYarnMetric(info JMXBeans, metrics []string, target string, w http.ResponseWriter, r *http.Request) {
+	openTasks := make(map[string]int, 0)
+	for _, bean := range info["beans"] {
+		if name, ok := bean["name"]; !ok {
+			continue
+		} else {
+			if strings.HasPrefix(name.(string), "Hadoop:service=ResourceManager,name=RpcActivityForPort") &&
+				bean.Get("tag.serverName") == "ApplicationMasterProtocolService" {
+				_ = json.Unmarshal([]byte(bean.Get("ApplicationMasterProtocolService").(string)), &openTasks)
+			}
+		}
+	}
+	for task, state := range openTasks {
+		if state != 1 {
+			continue
+		}
+		beans, err := RetrieveMetricFromYarnProxy(target, parseAppAttemptStr(task))
+		if err != nil {
+			log.Errorf("failed to retrieve yarn proxy metrics, %s", err)
+			continue
+		}
+		// TODO 取yarn proxy中的任务gauge参数
+		_ = beans
+	}
 }
 
 func metricHandler(w http.ResponseWriter, r *http.Request) {
@@ -68,14 +157,12 @@ func metricHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "retrieve metric failed: "+target+" "+err.Error(), http.StatusBadRequest)
 		return
 	}
-	switch moduleName {
-	case "namenode":
-		scrapeMetric(info, config.Cfg.Modules.Namenode.ScrapeMetrics, w, r)
-	case "yarn":
-		scrapeMetric(info, config.Cfg.Modules.Yarn.ScrapeMetrics, w, r)
-	case "hbase":
-		scrapeMetric(info, config.Cfg.Modules.Hbase.ScrapeMetrics, w, r)
+	metrics, ok := cfg.Modules[moduleName]
+	if !ok {
+		http.Error(w, moduleName+" module not defined", http.StatusBadRequest)
+		return
 	}
+	scrapeMetric(info, metrics.ScrapeMetrics, w, r)
 }
 
 func scrapeMetric(info JMXBeans, metrics []string, w http.ResponseWriter, r *http.Request) {
@@ -85,18 +172,44 @@ func scrapeMetric(info JMXBeans, metrics []string, w http.ResponseWriter, r *htt
 		if name == "" {
 			continue
 		}
+
+		var (
+			strVal string  = "na"
+			numVal float64 = -1
+		)
+		bean := info.Get(name)
+		value := bean.Get(metricName)
+		switch value.(type) {
+		case int64, int32, int, float64:
+			numVal = value.(float64)
+		case string:
+			strVal = value.(string)
+		default:
+			continue
+		}
 		opts := prometheus.GaugeOpts{
 			Name: fmt.Sprintf("%s_%s", TagName, stringy.New(metricName).SnakeCase("?", "").ToLower()),
 			Help: helpMsg,
 		}
-		value := info.Get(name).Get(metricName).(float64)
-		if value != 0 && name == "Hadoop:service=HBase,name=Master,sub=Server" {
-			opts.ConstLabels = prometheus.Labels{
-				"deadRegionServers": info.Get(name).Get("tag.deadRegionServers").(string),
+		if strVal != "na" {
+			if metricName == "tag.NumOpenConnectionsPerUser" {
+				var _m map[string]int
+				_ = json.Unmarshal([]byte(strVal), &_m)
+				if len(_m) == 0 {
+					continue
+				}
+				o := make(map[string]string, 0)
+				for _k, _v := range _m {
+					o[_k] = strconv.Itoa(_v)
+				}
+				opts.ConstLabels = o
 			}
 		}
 		gauge := prometheus.NewGauge(opts)
-		gauge.Set(value)
+		if numVal != -1 {
+			gauge.Set(numVal)
+		}
+		gauge.SetToCurrentTime()
 		registry.MustRegister(gauge)
 	}
 	h := promhttp.HandlerFor(registry, promhttp.HandlerOpts{})
@@ -113,9 +226,6 @@ func parseScrapeMetric(line string) (string, string, string, string) {
 }
 
 func main() {
-	if config.Cfg == nil {
-		panic("config parse error")
-	}
 	http.HandleFunc("/metrics", metricHandler)
-	http.ListenAndServe(":7070", nil)
+	log.Fatal(http.ListenAndServe(":7070", nil))
 }

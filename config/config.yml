@@ -28,6 +28,7 @@ modules:
       - Hadoop:service=ResourceManager,name=ClusterMetrics NumUnhealthyNMs Yarn不健康的节点数 hadoop_yarn
       - Hadoop:service=ResourceManager,name=ClusterMetrics NumActiveNMs Yarn当前在线的节点数 hadoop_yarn
       - Hadoop:service=ResourceManager,name=ClusterMetrics NumLostNMs Yarn失踪的节点数 hadoop_yarn
+      - Hadoop:service=ResourceManager,name=RpcActivityForPort8030 tag.NumOpenConnectionsPerUser Yarn打开的任务 hadoop_yarn
 
   hbase:
     scrape_metrics:
@@ -46,3 +47,7 @@ modules:
       - Hadoop:service=HBase,name=JvmMetrics ThreadsWaiting 等待的线程数 hadoop_hbase
       - Hadoop:service=HBase,name=JvmMetrics ThreadsBlocked Block的线程数 hadoop_hbase
       - Hadoop:service=HBase,name=RegionServer,sub=WAL SyncTime_mean WAL写hdfs的平均时间 hadoop_hbase
+
+  yarn_job:
+    scrape_metrics:
+
