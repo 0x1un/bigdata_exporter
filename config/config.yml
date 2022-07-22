@@ -1,5 +1,5 @@
 modules:
-  namenode:
+  namenode: # hdfs support
 #    targets:
 #      - "192.168.224.91:50070/jmx"
 #      - "192.168.224.92:50070/jmx"
@@ -20,6 +20,26 @@ modules:
       - Hadoop:service=NameNode,name=RpcDetailedActivityForPort8020 GetBlocksAvgTime block获取平均耗时 hadoop_hdfs
       - Hadoop:service=NameNode,name=FSNamesystem EstimatedCapacityLostTotal 容量故障导致的总容量损失估计 hadoop_hdfs
       - Hadoop:service=NameNode,name=FSNamesystem VolumeFailuresTotal 所有DataNodes的卷故障总数 hadoop_hdfs
+      - Hadoop:service=NameNode,name=JvmMetrics MemNonHeapUsedM JVM当前已使用的NonHeapMemory大小 hadoop_hdfs
+      - Hadoop:service=NameNode,name=JvmMetrics MemHeapUsedM JVM当前已使用的HeapMemory大小 hadoop_hdfs
+      - Hadoop:service=NameNode,name=JvmMetrics MemMaxM JVM运行时可以使用的最大内存大小 hadoop_hdfs
+  datanode:
+    scrape_metrics:
+      - Hadoop:service=DataNode,name=DataNodeActivity RemoteBytesRead 远程客户端读取字节速率 hadoop_datanode
+      - Hadoop:service=DataNode,name=DataNodeActivity RemoteBytesWritten 远程客户端写入字节速率 hadoop_datanode
+      - Hadoop:service=DataNode,name=DataNodeActivity WritesFromRemoteClient 来自远程客户端写操作QPS hadoop_datanode
+      - Hadoop:service=DataNode,name=DataNodeActivity WritesFromLocalClient 来自本地客户端写操作OPS hadoop_datanode
+      - Hadoop:service=DataNode,name=DataNodeActivity ReadsFromRemoteClient 来自远程客户端读操作QPS hadoop_datanode
+      - Hadoop:service=DataNode,name=DataNodeActivity ReadsFromLocalClient 来自本地客户端读操作QPS hadoop_datanode
+      - Hadoop:service=DataNode,name=DataNodeActivity DatanodeNetworkErrors 网络错误统计 hadoop_datanode
+      - Hadoop:service=DataNode,name=DataNodeActivity HeartbeatsAvgTime 心跳平均时长 hadoop_datanode
+      - Hadoop:service=DataNode,name=DataNodeActivity HeartbeatsNumOps 心跳QPS hadoop_datanode
+      - Hadoop:service=DataNode,name=DataNodeActivity SendDataPacketTransferNanosAvgTime 发送数据包平均时间 hadoop_datanode
+      - Hadoop:service=DataNode,name=DataNodeActivity ReadBlockOpNumOps 从DataNode读取Block的OPS hadoop_datanode
+      - Hadoop:service=DataNode,name=DataNodeActivity WriteBlockOpNumOps 向DataNode写入Block的OPS hadoop_datanode
+      - Hadoop:service=DataNode,name=DataNodeActivity BlockChecksumOpNumOps DataNode进行Checksum操作的OPS hadoop_datanode
+      - Hadoop:service=DataNode,name=DataNodeActivity CopyBlockOpNumOps 复制Block操作的OPS hadoop_datanode
+
 
   yarn:
 #    targets:
@@ -47,7 +67,42 @@ modules:
       - Hadoop:service=HBase,name=JvmMetrics ThreadsWaiting 等待的线程数 hadoop_hbase
       - Hadoop:service=HBase,name=JvmMetrics ThreadsBlocked Block的线程数 hadoop_hbase
       - Hadoop:service=HBase,name=RegionServer,sub=WAL SyncTime_mean WAL写hdfs的平均时间 hadoop_hbase
+      - Hadoop:service=HBase,name=Master,sub=Server masterActiveTime master进入active的时间 hadoop_hbase
+      - Hadoop:service=HBase,name=Master,sub=Server masterStartTime master进程启动时间 hadoop_hbase
+      - Hadoop:service=HBase,name=Master,sub=Server masterFinishedInitializationTime master完成初始化的时间 hadoop_hbase
+      - Hadoop:service=HBase,name=Master,sub=Server averageLoad master平均负载 hadoop_hbase
 
-  yarn_job:
+
+  hbase_rs:
     scrape_metrics:
+      - Hadoop:service=HBase,name=JvmMetrics MemNonHeapUsedM 进程使用的非堆内存大小 hadoop_hbase_rs
+      - Hadoop:service=HBase,name=JvmMetrics MemNonHeapCommittedM 进程commit的非堆内存大小 hadoop_hbase_rs
+      - Hadoop:service=HBase,name=JvmMetrics MemHeapUsedM 进程使用的堆内存大小 hadoop_hbase_rs
+      - Hadoop:service=HBase,name=JvmMetrics MemHeapCommittedM 进程commit的堆内存大小 hadoop_hbase_rs
+      - Hadoop:service=HBase,name=JvmMetrics MemHeapMaxM 进程最大的堆内存大小 hadoop_hbase_rs
+      - Hadoop:service=HBase,name=JvmMetrics MemMaxM 进程最大内存大小 hadoop_hbase_rs
+      - Hadoop:service=HBase,name=JvmMetrics ThreadsNew 处于NEW状态的线程数量 hadoop_hbase_rs
+      - Hadoop:service=HBase,name=JvmMetrics ThreadsRunnable 处于RUNNABLE状态的线程数量 hadoop_hbase_rs
+      - Hadoop:service=HBase,name=JvmMetrics ThreadsBlocked 处于BLOCKED状态的线程数量 hadoop_hbase_rs
+      - Hadoop:service=HBase,name=JvmMetrics ThreadsWaiting 处于WAITING状态的线程数量 hadoop_hbase_rs
+      - Hadoop:service=HBase,name=JvmMetrics ThreadsTimedWaiting 处于TIMED.WAITING状态的线程数量 hadoop_hbase_rs
+      - Hadoop:service=HBase,name=JvmMetrics ThreadsTerminated 当前TERMINATED状态线程数量 hadoop_hbase_rs
+      - Hadoop:service=HBase,name=RegionServer,sub=Server regionCount region个数 hadoop_hbase_rs
+      - Hadoop:service=HBase,name=RegionServer,sub=Server storeCount 存储个数 hadoop_hbase_rs
+      - Hadoop:service=HBase,name=RegionServer,sub=Server storeFileCount 存储文件个数 hadoop_hbase_rs
+      - Hadoop:service=HBase,name=RegionServer,sub=Server storeFileSize 存储文件总大小 hadoop_hbase_rs
+      - Hadoop:service=HBase,name=RegionServer,sub=Server totalRequestCount 总请求数 hadoop_hbase_rs
+      - Hadoop:service=HBase,name=RegionServer,sub=Server splitQueueLength split队列长度 hadoop_hbase_rs
+      - Hadoop:service=HBase,name=RegionServer,sub=Server compactionQueueLength compaction队列长度 hadoop_hbase_rs
+      - Hadoop:service=HBase,name=RegionServer,sub=Server flushQueueLength region-flush队列长度 hadoop_hbase_rs
+      - Hadoop:service=HBase,name=RegionServer,sub=Server slowAppendCount append请求时间超过1s的数量 hadoop_hbase_rs
+      - Hadoop:service=HBase,name=RegionServer,sub=Server slowDeleteCount delete请求时间超过1s的数量 hadoop_hbase_rs
+      - Hadoop:service=HBase,name=RegionServer,sub=Server slowGetCount get请求时间超过1s的数量 hadoop_hbase_rs
+      - Hadoop:service=HBase,name=RegionServer,sub=Server slowPutCount put请求时间超过1s的数量 hadoop_hbase_rs
+      - Hadoop:service=HBase,name=RegionServer,sub=Server slowIncrementCount increment请求时间超过1s的数量 hadoop_hbase_rs
+
+
+#
+#  yarn_job:
+#    scrape_metrics:
 
